@@ -1,0 +1,22 @@
+* {
+    font-size: 55px;
+}
+
+body {
+    display:flex;
+    justify-content: center;
+    align-items: center;
+    flex-direction: column;
+    min-height: 100vh;
+}
+
+.calculator-body {
+    display: flex;
+    flex-direction: column;
+    gap: 40px;
+}
+
+.calculator-body.div {
+    display: flex;
+
+}
