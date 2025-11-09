@@ -1,56 +1,75 @@
-let numberOne;
-let numberTwo;
-let operationSign;
-let operationFunctions = {
-        plus: (a,b) => a+b,
-        minus: (a,b) => a-b,
-        multiplication: (a,b) => a*b,
-        division: (a,b) => a/b
-    };
-let currentSum = 0;
+const operationFunctions = {
+    plus: (a, b) => a + b,
+    minus: (a, b) => a - b,
+    multiplication: (a, b) => a * b,
+    division: (a, b) => b === 0 ? 'Error' : a / b
+};
 
-function operate() {
-    return operationFunctions[operationSign](numberOne, numberTwo);
+let firstNumber = null;
+let currentOperation = null;
+let shouldClearDisplay = false;  // New flag
+const display = document.querySelector(".display-number");
+
+function operate(operation, a, b) {
+    return operationFunctions[operation](a, b);
 }
 
-function addNumberToDisplay() {
-    document.querySelectorAll(".digit").forEach(btn => {
-        btn.addEventListener("click", () => {
-            const digit = document.querySelector(".display-number");
-            digit.textContent += btn.textContent;
-            currentSum = digit.textContent;
-        })
-    })
+function handleDigitClick(digit) {
+    // Clear display if we should (after operator or equals)
+    if (shouldClearDisplay) {
+        display.textContent = '';
+        shouldClearDisplay = false;
+    }
+    display.textContent += digit;
 }
 
-function addOperatorFunctionality() {
-    document.querySelectorAll(".operator").forEach(btn => {
-        btn.addEventListener("click", () => {
-            operationSign = btn.id;
-            const digit = document.querySelector(".display-number");
-            currentSum, numberOne = +digit.textContent;
-            digit.textContent = "";
-        })
-    })
+function handleOperatorClick(operation) {
+    if (display.textContent === '') return;
+    
+    const currentNumber = parseFloat(display.textContent);
+    
+    // If we already have a pending operation, evaluate it first
+    if (firstNumber !== null && currentOperation !== null) {
+        const result = operate(currentOperation, firstNumber, currentNumber);
+        display.textContent = result;
+        firstNumber = result;
+    } else {
+        // First number in the chain
+        firstNumber = currentNumber;
+    }
+    
+    // Set new operation and flag to clear on next digit
+    currentOperation = operation;
+    shouldClearDisplay = true;
 }
 
-function clearDisplay() {
-    const clearBtn = document.querySelector("#clear");
-    const digit = document.querySelector(".display-number");
-    clearBtn.addEventListener("click", () => digit.textContent = "")
+function handleEquals() {
+    if (firstNumber === null || currentOperation === null || display.textContent === '') return;
+    
+    const secondNumber = parseFloat(display.textContent);
+    const result = operate(currentOperation, firstNumber, secondNumber);
+    
+    display.textContent = result;
+    firstNumber = null;
+    currentOperation = null;
+    shouldClearDisplay = true;
 }
 
-function equals(){
-    document.querySelector("#equals").addEventListener("click", () => {
-        const digit = document.querySelector(".display-number");
-        numberTwo = +digit.textContent;
-        currentSum = operate();
-        numberOne, digit.textContent = currentSum;
-    })
+function handleClear() {
+    display.textContent = '';
+    firstNumber = null;
+    currentOperation = null;
+    shouldClearDisplay = false;
 }
 
+// Event listeners
+document.querySelectorAll(".digit").forEach(btn => {
+    btn.addEventListener("click", () => handleDigitClick(btn.textContent));
+});
 
-addNumberToDisplay();
-clearDisplay();
-addOperatorFunctionality();
-equals()
+document.querySelectorAll(".operator").forEach(btn => {
+    btn.addEventListener("click", () => handleOperatorClick(btn.id));
+});
+
+document.querySelector("#equals").addEventListener("click", handleEquals);
+document.querySelector("#clear").addEventListener("click", handleClear);
