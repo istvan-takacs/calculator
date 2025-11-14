@@ -5,7 +5,7 @@ const operationFunctions = {
     plus: (a, b) => a + b,
     minus: (a, b) => a - b,
     multiplication: (a, b) => a * b,
-    division: (a, b) => b === 0 ? 'Error' : a / b // Displays 'Erros' if division with 0
+    division: (a, b) => b === 0 ? "Dividing by 0, huh...?" : a / b // Displays error if division with 0
 };
 const operators = {
     "+": "plus",
@@ -28,22 +28,21 @@ function operate(operation, a, b) {
 }
 
 function handleDigitClick(digit) {
-    // TODO DISABLE DECIMAL POINT TWICE, only accepts valid numbers
     // Clear display if we should (after operator or equals)
     if (shouldClearDisplay) {
-        display.textContent = '';
+        display.textContent = "";
         shouldClearDisplay = false;
     }
-    if (Number.isInteger(+digit)|| digit === ".") {
+    if (!(display.textContent.includes(".") && digit === ".")) {
         display.textContent += digit;
     }
 }
 
 function handleOperatorClick(operation) {
-    if (display.textContent === '') return;
+    // Do not execute if have not been any digits pressed or the last pressed  button/key was an operator
+    if (display.textContent === "" || display.textContent.slice(-1) in operators) return;
     
-    const currentNumber = parseFloat(display.textContent); 
-    // TODO FIX BUG WHEN DOUBLE PRESSING OPERATOR BUTTON
+    const currentNumber = parseFloat(display.textContent);
     
     // If we already have a pending operation, evaluate it first
     if (firstNumber !== null && currentOperation !== null) {
@@ -64,10 +63,9 @@ function handleOperatorClick(operation) {
 }
 
 function handleEquals() {
-    if (firstNumber === null || currentOperation === null || display.textContent === '') return;
+    if (firstNumber === null || currentOperation === null || display.textContent === "") return;
     
     const secondNumber = parseFloat(display.textContent);
-    console.log(currentOperation, secondNumber, firstNumber)
     const result = operate(currentOperation, firstNumber, secondNumber);
     
     display.textContent = result;
@@ -77,21 +75,23 @@ function handleEquals() {
 }
 
 function handleClear() {
-    display.textContent = '';
+    display.textContent = "";
     firstNumber = null;
     currentOperation = null;
     shouldClearDisplay = false;
 }
 
 function handleKeyboard(key) {
-    if (key in operators) {
-        currentOperation = operators[key];
-        handleOperatorClick(currentOperation);
-    } else if (key === "=") {
-        handleEquals()
+    if (Number.isInteger(+key)|| key === ".") {
+        handleDigitClick(key);
+    } else if (key in operators) {
+        handleOperatorClick(operators[key]);
+    } else if (key === "=" || key === "Enter") {
+        handleEquals();
     } else if (key === "Backspace") {
+        let deletedKey = display.textContent.slice(-1);
         display.textContent = display.textContent.slice(0, -1);
-        currentOperation = null;
+        if (deletedKey in operators) currentOperation = null;
     }
 }
 
@@ -101,12 +101,10 @@ function handleKeyboard(key) {
 document.querySelectorAll(".digit").forEach(btn => {
     btn.addEventListener("click", () => handleDigitClick(btn.textContent));
 });
-document.addEventListener("keydown", (e) => handleDigitClick(e.key)); // Add keyboard support for digits and floating points
-
 document.querySelectorAll(".operator").forEach(btn => {
     btn.addEventListener("click", () => handleOperatorClick(btn.id));
 });
-document.addEventListener("keydown", (e) => handleKeyboard(e.key)); // Add keyboard support for operators
+document.addEventListener("keydown", (e) => handleKeyboard(e.key)); // Add keyboard support for operators, digits and floating points
 
 document.querySelector("#equals").addEventListener("click", handleEquals);
 document.querySelector("#clear").addEventListener("click", handleClear);
