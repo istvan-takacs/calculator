@@ -15,7 +15,8 @@ const operators = {
     "/": "division"
 };
 
-const display = document.querySelector(".display-number");
+const display = document.querySelector(".current-operation-display");
+const lastOperation = document.querySelector(".last-operation-display");
 
 let firstNumber = null;
 let currentOperation = null;
@@ -27,7 +28,6 @@ let shouldClearDisplay = false;
 
 function operate(operation, a, b) {
     const result = operationFunctions[operation](a, b);
-    // Round to avoid floating point errors
     return typeof result === 'number' ? Math.round(result * 100000000) / 100000000 : result;
 }
 
@@ -35,17 +35,18 @@ function handleDigitClick(digit) {
     // Clear display if we should (after operator or equals)
     if (shouldClearDisplay) {
         display.textContent = "";
+        lastOperation.textContent = "";
         shouldClearDisplay = false;
     }
     
-    // Prevent multiple decimal points
-    if (digit === "." && display.textContent.includes(".")) return;
-    
-    // Prevent starting with multiple zeros
+    // Clear initial "0" when starting to type (unless typing decimal point)
     if (display.textContent === "0" && digit !== ".") {
         display.textContent = digit;
         return;
     }
+    
+    // Prevent multiple decimal points
+    if (digit === "." && display.textContent.includes(".")) return;
     
     display.textContent += digit;
 }
@@ -62,12 +63,12 @@ function handleOperatorClick(operation) {
             break;
         }
     }
-    
     const currentNumber = parseFloat(displayValue);
     
     // If we already have a pending operation, evaluate it first
     if (firstNumber !== null && currentOperation !== null && !shouldClearDisplay) {
         const result = operate(currentOperation, firstNumber, currentNumber);
+        lastOperation.textContent = `${firstNumber}${currentOperation}${currentNumber}`
         display.textContent = result;
         firstNumber = result;
     } else {
@@ -80,8 +81,8 @@ function handleOperatorClick(operation) {
     shouldClearDisplay = true;
     
     // Append the current operation at the end of the display
-    const operatorButton = document.getElementById(currentOperation);
-    display.textContent += operatorButton.textContent;
+    const operatorSign = getKeyByValue(operators, currentOperation)
+    lastOperation.textContent = `${firstNumber}${operatorSign}`;
 }
 
 function handleEquals() {
@@ -95,11 +96,12 @@ function handleEquals() {
             break;
         }
     }
-    
+    const operatorSign = getKeyByValue(operators, currentOperation)
     const secondNumber = parseFloat(displayValue);
     const result = operate(currentOperation, firstNumber, secondNumber);
     
     display.textContent = result;
+    lastOperation.textContent = `${firstNumber}${operatorSign}${secondNumber}`;
     firstNumber = result;
     currentOperation = null;
     shouldClearDisplay = true;
@@ -107,6 +109,7 @@ function handleEquals() {
 
 function handleClear() {
     display.textContent = "";
+    lastOperation.textContent = "";
     firstNumber = null;
     currentOperation = null;
     shouldClearDisplay = false;
@@ -144,8 +147,14 @@ function handleKeyboard(key) {
     }
 }
 
+function getKeyByValue(object, value) {
+  return Object.keys(object).find(key => object[key] === value);
+}
+
+
 // -------------------------------
 // Event listeners
+// TODO: IMPLEMENT +/- button!, Text keeps slipping between displays,
 // -------------------------------
 document.querySelectorAll(".digit").forEach(btn => {
     btn.addEventListener("click", () => handleDigitClick(btn.textContent));
@@ -154,6 +163,8 @@ document.querySelectorAll(".digit").forEach(btn => {
 document.querySelectorAll(".operator").forEach(btn => {
     btn.addEventListener("click", () => handleOperatorClick(btn.id));
 });
+
+document.querySelector("#delete-last").addEventListener("click", handleBackspace);
 
 document.addEventListener("keydown", (e) => {
     // Prevent default for slash to avoid browser search
