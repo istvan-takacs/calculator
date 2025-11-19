@@ -41,6 +41,8 @@ function handleDigitClick(digit) {
     // Prevent multiple decimal points
     if (digit === "." && display.textContent.includes(".")) return;
 
+    if (display.textContent === "0") display.textContent = "";
+
     // Display operation in top screen
     if (currentOperation) {
         lastOperation.textContent += digit
@@ -71,7 +73,7 @@ function handleOperatorClick(operation) {
     // If we already have a pending operation, evaluate it first
     if (firstNumber !== null && currentOperation !== null && !shouldClearDisplay) {
         const result = operate(currentOperation, firstNumber, currentNumber);
-        lastOperation.textContent = `${firstNumber}${currentOperation}${currentNumber}`
+        lastOperation.textContent = `${firstNumber} ${currentOperation} ${currentNumber}`
         display.textContent = result;
         firstNumber = result;
     } else {
@@ -85,7 +87,7 @@ function handleOperatorClick(operation) {
     
     // Append the current operation at the end of the display
     const operatorSign = getKeyByValue(operators, currentOperation)
-    lastOperation.textContent = `${firstNumber}${operatorSign}`;
+    lastOperation.textContent = `${firstNumber} ${operatorSign} `;
 }
 
 function handleEquals() {
@@ -104,7 +106,7 @@ function handleEquals() {
     const result = operate(currentOperation, firstNumber, secondNumber);
     
     display.textContent = result;
-    lastOperation.textContent = `${firstNumber}${operatorSign}${secondNumber}=`;
+    lastOperation.textContent = `${firstNumber} ${operatorSign} ${secondNumber} =`;
     firstNumber = result;
     currentOperation = null;
     shouldClearDisplay = true;
@@ -155,16 +157,33 @@ function handleSignChange() {
 }
 
 function handleKeyboard(key) {
+    // Find the corresponding button element
+    let button = null;
+    
     if (Number.isInteger(+key) || key === ".") {
         handleDigitClick(key);
+        // Find digit button by ID or text content
+        button = key === "." 
+            ? document.querySelector("#floating-point")
+            : document.querySelector(`#digit-${key}`);
     } else if (key in operators) {
         handleOperatorClick(operators[key]);
+        button = document.querySelector(`#${operators[key]}`);
     } else if (key === "=" || key === "Enter") {
         handleEquals();
+        button = document.querySelector("#equals");
     } else if (key === "Backspace") {
         handleBackspace();
+        button = document.querySelector("#delete-last");
     } else if (key === "Escape") {
         handleClear();
+        button = document.querySelector("#clear");
+    }
+    
+    // Add visual feedback if button was found
+    if (button) {
+        button.classList.add("pressed");
+        setTimeout(() => button.classList.remove("pressed"), 120);
     }
 }
 
