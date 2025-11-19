@@ -35,26 +35,29 @@ function handleDigitClick(digit) {
     // Clear display if we should (after operator or equals)
     if (shouldClearDisplay) {
         display.textContent = "";
-        lastOperation.textContent = "";
         shouldClearDisplay = false;
-    }
-    
-    // Clear initial "0" when starting to type (unless typing decimal point)
-    if (display.textContent === "0" && digit !== ".") {
-        display.textContent = digit;
-        return;
     }
     
     // Prevent multiple decimal points
     if (digit === "." && display.textContent.includes(".")) return;
-    
+
+    // Display operation in top screen
+    if (currentOperation) {
+        lastOperation.textContent += digit
+    }
     display.textContent += digit;
 }
 
 function handleOperatorClick(operation) {
-    // Don't execute if display is empty
-    if (display.textContent === "") return;
+    // Allow negative signs
+    if (operation === "minus" && display.textContent === "") {
+        display.textContent = "-";
+        return
+    }    
     
+    // Don't execute if display is empty
+    if (display.textContent === "" || display.textContent === "-") return;
+
     // Strip any existing operator before parsing
     let displayValue = display.textContent;
     for (let op in operators) {
@@ -101,7 +104,7 @@ function handleEquals() {
     const result = operate(currentOperation, firstNumber, secondNumber);
     
     display.textContent = result;
-    lastOperation.textContent = `${firstNumber}${operatorSign}${secondNumber}`;
+    lastOperation.textContent = `${firstNumber}${operatorSign}${secondNumber}=`;
     firstNumber = result;
     currentOperation = null;
     shouldClearDisplay = true;
@@ -118,8 +121,15 @@ function handleClear() {
 function handleBackspace() {
     if (display.textContent === "") return;
     
+    // Handle backspace on main display
     let deletedKey = display.textContent.slice(-1);
     display.textContent = display.textContent.slice(0, -1);
+
+    // Handle backspace on the last operation display
+    deletedKey = lastOperation.textContent.slice(-1);
+    if (deletedKey != "=" && !(deletedKey in operators)) {
+        lastOperation.textContent = lastOperation.textContent.slice(0, -1);
+    }
     
     // If we deleted an operator, reset the operation
     if (deletedKey in operators) {
@@ -131,6 +141,17 @@ function handleBackspace() {
     if (display.textContent === "") {
         shouldClearDisplay = false;
     }
+}
+
+function handleSignChange() {
+    if (display.textContent === "") return;
+
+    if (display.textContent.startsWith("-")) {
+        display.textContent = display.textContent.slice(1);
+    } else {
+        display.textContent = "-" + display.textContent;
+    }
+
 }
 
 function handleKeyboard(key) {
@@ -154,7 +175,6 @@ function getKeyByValue(object, value) {
 
 // -------------------------------
 // Event listeners
-// TODO: IMPLEMENT +/- button!, Text keeps slipping between displays,
 // -------------------------------
 document.querySelectorAll(".digit").forEach(btn => {
     btn.addEventListener("click", () => handleDigitClick(btn.textContent));
@@ -165,6 +185,8 @@ document.querySelectorAll(".operator").forEach(btn => {
 });
 
 document.querySelector("#delete-last").addEventListener("click", handleBackspace);
+
+document.querySelector("#plus-minus").addEventListener("click", handleSignChange);
 
 document.addEventListener("keydown", (e) => {
     // Prevent default for slash to avoid browser search
