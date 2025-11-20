@@ -25,7 +25,6 @@ let shouldClearDisplay = false;
 // -------------------------------
 // Calculator functions
 // -------------------------------
-
 function operate(operation, a, b) {
     const result = operationFunctions[operation](a, b);
     return typeof result === 'number' ? Math.round(result * 100000000) / 100000000 : result;
@@ -52,28 +51,21 @@ function handleDigitClick(digit) {
 
 function handleOperatorClick(operation) {
     // Allow negative signs
-    if (operation === "minus" && display.textContent === "") {
+    if (operation === "minus" && isDisplayEmpty()) {
         display.textContent = "-";
-        return
+        return;
     }    
     
-    // Don't execute if display is empty
-    if (display.textContent === "" || display.textContent === "-") return;
+    // Don't execute if display is empty or just a minus
+    if (isDisplayEmpty() || display.textContent === "-") return;
 
     // Strip any existing operator before parsing
-    let displayValue = display.textContent;
-    for (let op in operators) {
-        if (displayValue.endsWith(op)) {
-            displayValue = displayValue.slice(0, -1);
-            break;
-        }
-    }
-    const currentNumber = parseFloat(displayValue);
+    const currentNumber = parseFloat(stripOperatorFromDisplay());
     
     // If we already have a pending operation, evaluate it first
     if (firstNumber !== null && currentOperation !== null && !shouldClearDisplay) {
         const result = operate(currentOperation, firstNumber, currentNumber);
-        lastOperation.textContent = `${firstNumber} ${currentOperation} ${currentNumber}`
+        updateLastOperationDisplay(firstNumber, currentOperation, currentNumber, true);
         display.textContent = result;
         firstNumber = result;
     } else {
@@ -85,28 +77,17 @@ function handleOperatorClick(operation) {
     currentOperation = operation;
     shouldClearDisplay = true;
     
-    // Append the current operation at the end of the display
-    const operatorSign = getKeyByValue(operators, currentOperation)
-    lastOperation.textContent = `${firstNumber} ${operatorSign} `;
+    updateLastOperationDisplay(firstNumber, currentOperation);
 }
 
 function handleEquals() {
-    if (firstNumber === null || currentOperation === null || display.textContent === "" || shouldClearDisplay) return;
-    
-    // Strip operator before parsing
-    let displayValue = display.textContent;
-    for (let op in operators) {
-        if (displayValue.endsWith(op)) {
-            displayValue = displayValue.slice(0, -1);
-            break;
-        }
-    }
-    const operatorSign = getKeyByValue(operators, currentOperation)
-    const secondNumber = parseFloat(displayValue);
+    if (firstNumber === null || currentOperation === null || isDisplayEmpty() || shouldClearDisplay) return;
+
+    const secondNumber = parseFloat(stripOperatorFromDisplay());
     const result = operate(currentOperation, firstNumber, secondNumber);
     
     display.textContent = result;
-    lastOperation.textContent = `${firstNumber} ${operatorSign} ${secondNumber} =`;
+    updateLastOperationDisplay(firstNumber, currentOperation, secondNumber, true);
     firstNumber = result;
     currentOperation = null;
     shouldClearDisplay = true;
@@ -121,7 +102,7 @@ function handleClear() {
 }
 
 function handleBackspace() {
-    if (display.textContent === "") return;
+    if (isDisplayEmpty()) return;
     
     // Handle backspace on main display
     let deletedKey = display.textContent.slice(-1);
@@ -146,7 +127,7 @@ function handleBackspace() {
 }
 
 function handleSignChange() {
-    if (display.textContent === "") return;
+    if (isDisplayEmpty()) return;
 
     if (display.textContent.startsWith("-")) {
         display.textContent = display.textContent.slice(1);
@@ -187,8 +168,30 @@ function handleKeyboard(key) {
     }
 }
 
+// -------------------------------
+// Utility functions 
+// -------------------------------
 function getKeyByValue(object, value) {
   return Object.keys(object).find(key => object[key] === value);
+}
+
+function stripOperatorFromDisplay() {
+    let displayValue = display.textContent;
+    for (let op in operators) {
+        if (displayValue.endsWith(op)) {
+            return displayValue.slice(0, -1);
+        }
+    }
+    return displayValue;
+}
+
+function updateLastOperationDisplay(first, operator, second = "", equals = false) {
+    const symbol = getKeyByValue(operators, operator);
+    lastOperation.textContent = `${first} ${symbol} ${second}${equals ? " =" : ""}`;
+}
+
+function isDisplayEmpty() {
+    return (display.textContent === "");
 }
 
 
